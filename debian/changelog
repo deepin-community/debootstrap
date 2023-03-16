@@ -1,8 +1,5 @@
 debootstrap (1.0.128+nmu2deepin) unstable; urgency=medium
 
-  * Non-maintainer upload.
-
-  [ Tianyu Chen ]
   * Add support for deepin beige
 
  -- Tianyu Chen <chentianyu1@uniontech.com>  Wed, 15 Mar 2023 13:53:45 +0800

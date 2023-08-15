@@ -1,7 +1,7 @@
 test_build:
   steps:
     - link_package:
-        source_project: deepin:Develop:community
+        source_project: deepin:Develop:main
         source_package: %{SCM_REPOSITORY_NAME} 
         target_project: deepin:CI
 
@@ -22,7 +22,7 @@ test_build:
 tag_build:
   steps:
     - trigger_services:
-        project: deepin:Unstable:community
+        project: deepin:Unstable:main
         package: %{SCM_REPOSITORY_NAME}
   filters:
     event: tag_push
@@ -30,7 +30,7 @@ tag_build:
 commit_build:
   steps:
     - trigger_services:
-        project: deepin:Develop:community
+        project: deepin:Develop:main
         package: %{SCM_REPOSITORY_NAME}
   filters:
     event: push

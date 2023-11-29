@@ -9,6 +9,9 @@ else ifeq (0,$(shell dpkg-vendor --derives-from Tanglu; echo $$?))
 else ifeq (0,$(shell dpkg-vendor --derives-from Kali; echo $$?))
   RECOMMENDS := kali-archive-keyring, arch-test (>= 0.11~),
   SUGGESTS   := debian-archive-keyring, ubuntu-archive-keyring, binutils, xz-utils, zstd
+else ifeq (0,$(shell dpkg-vendor --derives-from Pardus; echo $$?))
+  RECOMMENDS := pardus-archive-keyring, arch-test (>= 0.11~),
+  SUGGESTS   := debian-archive-keyring, ubuntu-archive-keyring, binutils, xz-utils, zstd
 else
   RECOMMENDS := debian-archive-keyring, arch-test (>= 0.11~),
   SUGGESTS   := ubuntu-archive-keyring, binutils, xz-utils, zstd
@@ -17,12 +20,7 @@ endif
 %:
 	dh $@
 
-# need to be root to make devices, so build is done in install target
-override_dh_auto_build:
-
 override_dh_auto_install:
-	dh_auto_build
-	
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/debootstrap
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/debootstrap-udeb
 

@@ -1,3 +1,9 @@
+debootstrap (1.0.133deepin1) unstable; urgency=medium
+
+  * Add support for deepin beige.
+
+ -- Tianyu Chen <sweetyfish@deepin.org>  Wed, 29 Nov 2023 11:53:23 +0800
+
 debootstrap (1.0.133) unstable; urgency=medium
 
   [ Luca Boccassi ]

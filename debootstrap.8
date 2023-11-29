@@ -89,11 +89,12 @@ base Debian installation with all packages of priority \fIrequired\fR and
 .IP
 .IP "\fB\-\-merged-usr\fP"
 Create /{bin,sbin,lib}/ symlinks pointing to their counterparts in /usr/.
-(Default for most variants.)
+(Default for most variants and suites.)
 .IP
 .IP "\fB\-\-no-merged-usr\fP"
 Do not create /{bin,sbin,lib}/ symlinks pointing to their counterparts in /usr/.
-(Default for the buildd variant.)
+(Default for the buildd variant of Debian 12 'bookworm' or older, and all
+variants of Debian 9 'stretch' or older.)
 .IP
 .IP "\fB\-\-keyring=KEYRING\fP"
 Override the default keyring for the distribution being bootstrapped,

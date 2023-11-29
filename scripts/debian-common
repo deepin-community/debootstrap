@@ -10,7 +10,9 @@ case $ARCH in
 esac
 
 work_out_debs () {
-	required="$(get_debs Priority: required)"
+	if ! doing_variant buildd; then
+		required="$(get_debs Priority: required)"
+	fi
 
 	if doing_variant - || doing_variant fakechroot; then
 		#required="$required $(get_debs Priority: important)"
@@ -18,6 +20,10 @@ work_out_debs () {
 		base="$(get_debs Priority: important)"
 	elif doing_variant buildd; then
 		base="apt build-essential"
+		# do not install Priority:required for the buildd variant
+		# explicitly add mawk because we cannot resolve base-files's
+		# virtual pre-depends on awk
+		required="mawk $(get_debs Essential: yes)"
 	elif doing_variant minbase; then
 		base="apt"
 	fi
@@ -42,9 +48,9 @@ work_out_debs () {
 	esac
 
 	# On suites >= bookworm, either we set up a merged-/usr system
-	# via setup_merged_usr, or we deliberately avoided that migration
-	# by creating the flag file. This means there's no need for the
-	# live migration 'usrmerge' package and its extra dependencies:
+	# via merge_usr, or we deliberately avoid that migration by creating
+	# the flag file. This means there's no need for the live migration
+	# 'usrmerge' package and its extra dependencies:
 	# we can install the empty 'usr-is-merged' metapackage to indicate
 	# that the transition has been done.
 	case "$CODENAME" in
@@ -73,8 +79,8 @@ first_stage_install () {
 		MERGED_USR="no"
 	fi
 
-	setup_merged_usr
 	extract $required
+	merge_usr
 
 	mkdir -p "$TARGET/var/lib/dpkg"
 	: >"$TARGET/var/lib/dpkg/status"

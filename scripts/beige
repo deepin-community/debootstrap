@@ -1,6 +1,7 @@
 mirror_style release
 download_style apt
 finddebs_style from-indices
+variants - buildd
 
 default_mirror https://community-packages.deepin.com/beige/
 keyring /usr/share/keyrings/deepin-archive-camel-keyring.gpg
@@ -9,14 +10,22 @@ work_out_debs () {
 	required="$(get_debs Priority: required)"
 	base="$(get_debs Priority: important)"
 
-	case $MIRRORS in
-		https://*)
-			base="$base ca-certificates"
+	case "$CODENAME" in
+		apricot|eagle)
+			;;
+		*)
+			required="$required usr-is-merged"
 			;;
 	esac
 	
-	required="$required usr-is-merged"
 	EXCLUDE_DEPENDENCY="$EXCLUDE_DEPENDENCY usrmerge"
+
+	base="$base ca-certificates"
+
+	if doing_variant buildd; then
+		base="$base build-essential"
+	fi
+
 }
 
 first_stage_install () {

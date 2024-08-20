@@ -1,3 +1,11 @@
+debootstrap (1.0.133deepin2) unstable; urgency=medium
+
+  * Add apricot, eagle and snipe.
+  * apricot and eagle is not usr-merged.
+  * Add support for variant=buildd.
+
+ -- Tianyu Chen <sweetyfish@deepin.org>  Fri, 21 Feb 2025 16:12:37 +0800
+
 debootstrap (1.0.133deepin1) unstable; urgency=medium
 
   * Add support for deepin beige.

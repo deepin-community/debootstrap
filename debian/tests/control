@@ -1,4 +1,5 @@
-Tests: debian-testing
+Features: test-name=debian-testing-minbase
+Test-Command: ./debian/tests/debian-testing minbase
 Depends:
  debootstrap,
  libdistro-info-perl,
@@ -8,6 +9,35 @@ Depends:
  systemd [linux-any],
  systemd-container [linux-any],
  ca-certificates,
+ distro-info,
+Restrictions: allow-stderr, needs-root
+
+Features: test-name=debian-testing-buildd
+Test-Command: ./debian/tests/debian-testing buildd
+Depends:
+ debootstrap,
+ libdistro-info-perl,
+ libdpkg-perl,
+ libipc-run-perl,
+ perl,
+ systemd [linux-any],
+ systemd-container [linux-any],
+ ca-certificates,
+ distro-info,
+Restrictions: allow-stderr, needs-root
+
+Features: test-name=debian-testing-default
+Test-Command: ./debian/tests/debian-testing -
+Depends:
+ debootstrap,
+ libdistro-info-perl,
+ libdpkg-perl,
+ libipc-run-perl,
+ perl,
+ systemd [linux-any],
+ systemd-container [linux-any],
+ ca-certificates,
+ distro-info,
 Restrictions: allow-stderr, needs-root
 
 Tests: unsorted-packages-files
@@ -18,23 +48,10 @@ Depends:
  python3-requests,
 Restrictions: allow-stderr
 
-# This tests running debootstrap inside an unshared user namespace.
-# Inside that namespace, mknod is not available and container=mmdebstrap-unshare
-# is used to let debootstrap bind-mount entries in /dev instead of using mknod
-# In such an environment "mount -t proc proc /proc" will not work (see
-# #1031222) so this also tests whether the fallback to bind-mounting
-# proc works as systemd-tmpfiles will otherwise not create several files.
-Test-Command: mmdebstrap --variant=custom --mode=unshare --setup-hook='env container=mmdebstrap-unshare ./debian/tests/debian-testing' --skip=update,setup,cleanup - "$AUTOPKGTEST_TMP/chroot.d"
-Features: test-name=unshared
+Tests: arch-all-support
 Depends:
  debootstrap,
- libdistro-info-perl,
- libdpkg-perl,
- libipc-run-perl,
- perl,
- systemd [linux-any],
- systemd-container [linux-any],
- ca-certificates,
- mmdebstrap,
- uidmap,
+ python3-apt,
+ python3-flask,
+ python3-requests,
 Restrictions: allow-stderr

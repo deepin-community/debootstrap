@@ -100,7 +100,7 @@ Status: install ok installed" >> "$TARGET/var/lib/dpkg/status"
 	}
 
 	if doing_variant fakechroot; then
-		setup_proc_fakechroot
+		setup_proc_symlink
 	else
 		setup_proc
 		in_target /sbin/ldconfig

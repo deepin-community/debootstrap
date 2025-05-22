@@ -1,33 +1,39 @@
-case $ARCH in
-  amd64|i386)
-	case $SUITE in
-	  gutsy|hardy|intrepid|jaunty|karmic|lucid|maverick|natty|oneiric|precise|quantal|raring|saucy|utopic|vivid|wily|yakkety|zesty)
-	default_mirror http://old-releases.ubuntu.com/ubuntu
-	  ;;
-	  *)
-	default_mirror http://archive.ubuntu.com/ubuntu
-	;;
+# shellcheck shell=sh
+if command -v ubuntu-distro-info >/dev/null 2>&1; then
+	if ubuntu-distro-info --supported | grep -q "$SUITE" >/dev/null 2>&1; then
+		supported=true
+	else
+		supported=false
+	fi
+elif command -v curl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+	supported="$(curl -s https://endoflife.date/api/ubuntu.json | jq --arg suite $SUITE '[.[] | select((.extendedSupport // .support) > (now | strftime("%Y-%m-%d")) and (.codename | test($suite; "i")))] | isempty(.[]) | not')"
+elif command -v wget >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+	supported="$(wget -qO- https://endoflife.date/api/ubuntu.json | jq --arg suite $SUITE '[.[] | select((.extendedSupport // .support) > (now | strftime("%Y-%m-%d")) and (.codename | test($suite; "i")))] | isempty(.[]) | not')"
+else
+	supported=true
+fi
+
+if [ "$supported" = true ]; then
+	case "$ARCH" in
+		amd64|i386)
+			default_mirror http://archive.ubuntu.com/ubuntu
+		;;
+		*)
+			default_mirror http://ports.ubuntu.com/ubuntu-ports
+		;;
 	esac
-	;;
-  sparc)
-	case $SUITE in
-	  gutsy)
+	keyring /usr/share/keyrings/ubuntu-archive-keyring.gpg
+else
 	default_mirror http://old-releases.ubuntu.com/ubuntu
-	;;
-	  *)
-	default_mirror http://ports.ubuntu.com/ubuntu-ports
-	;;
-	esac
-	;;
-  *)
-	default_mirror http://ports.ubuntu.com/ubuntu-ports
-	;;
-esac
+	keyring /usr/share/keyrings/ubuntu-archive-removed-keys.gpg
+fi
+# Note: The "removed keys" does not automatically tally with unsupported releases.
+# In this case the user will need to use the --keyring= switch.
+
 mirror_style release
 download_style apt
 finddebs_style from-indices
 variants - buildd fakechroot minbase
-keyring /usr/share/keyrings/ubuntu-archive-keyring.gpg
 
 if doing_variant fakechroot; then
 	test "$FAKECHROOT" = "true" || error 1 FAKECHROOTREQ "This variant requires fakechroot environment to be started"
@@ -40,17 +46,14 @@ case $ARCH in
 	*)          LIBC="libc6" ;;
 esac
 
-case $SUITE in
-	gutsy|hardy|intrepid|jaunty|karmic|lucid|maverick|natty|oneiric|precise|quantal|raring|saucy|trusty|utopic|vivid|wily|xenial|yakkety|zesty|artful|bionic|cosmic|disco|eoan|focal|groovy|hirsute) ;;
-	*)
-		# impish+ will use zstd compression, check if supported
-		dpkg_zstd="$(dpkg-deb --help 2>/dev/null | grep ' zstd,' || :)"
-		if [ -z "$EXTRACTOR_OVERRIDE" ] && [ -z "$dpkg_zstd" ]; then
-			info CHOSENEXTRACTOR "%s uses zstd compression, setting --extractor=ar option" "$SUITE"
-			export EXTRACTOR_OVERRIDE=ar
-		fi
-	;;
-esac
+# impish+ will use zstd compression, check if supported
+if command -v ubuntu-distro-info >/dev/null 2>&1 && [ $(ubuntu-distro-info -r --series "$SUITE" | cut -d. -f1) -gt 20 ]; then
+	dpkg_zstd="$(dpkg-deb --help 2>/dev/null | grep ' zstd,' || :)"
+	if [ -z "${EXTRACTOR_OVERRIDE-}" ] && [ -z "$dpkg_zstd" ]; then
+		info CHOSENEXTRACTOR "%s uses zstd compression, setting --extractor=ar option" "$SUITE"
+		export EXTRACTOR_OVERRIDE=ar
+	fi
+fi
 
 work_out_debs () {
 	required="$(get_debs Priority: required)"
@@ -164,9 +167,10 @@ second_stage_install () {
 	setup_dynamic_devices
 
 	x_feign_install () {
-		local pkg="$1"
-		local deb="$(debfor $pkg)"
-		local ver="$(in_target dpkg-deb -f "$deb" Version)"
+		local pkg deb ver
+		pkg="$1"
+		deb="$(debfor $pkg)"
+		ver="$(in_target dpkg-deb -f "$deb" Version)"
 
 		mkdir -p "$TARGET/var/lib/dpkg/info"
 
@@ -186,7 +190,7 @@ Status: install ok installed" >> "$TARGET/var/lib/dpkg/status"
 	}
 
 	p () {
-		baseprog="$(($baseprog + ${1:-1}))"
+		baseprog="$((baseprog + 1))"
 	}
 
 	if ! doing_variant fakechroot; then
@@ -201,14 +205,14 @@ Status: install ok installed" >> "$TARGET/var/lib/dpkg/status"
 	baseprog=0
 	bases=7
 
-	p; progress $baseprog $bases INSTCORE "Installing core packages" #1
+	p; progress $baseprog "$bases" INSTCORE "Installing core packages" #1
 	info INSTCORE "Installing core packages..."
 
-	p; progress $baseprog $bases INSTCORE "Installing core packages" #2
+	p; progress $baseprog "$bases" INSTCORE "Installing core packages" #2
 	ln -sf mawk "$TARGET/usr/bin/awk"
 	x_core_install base-passwd
 	x_core_install base-files
-	p; progress $baseprog $bases INSTCORE "Installing core packages" #3
+	p; progress $baseprog "$bases" INSTCORE "Installing core packages" #3
 	x_core_install dpkg
 
 	if [ ! -e "$TARGET/etc/localtime" ]; then
@@ -219,17 +223,17 @@ Status: install ok installed" >> "$TARGET/var/lib/dpkg/status"
 		install_fakechroot_tools
 	fi
 
-	p; progress $baseprog $bases INSTCORE "Installing core packages" #4
+	p; progress $baseprog "$bases" INSTCORE "Installing core packages" #4
 	x_core_install $LIBC
 
-	p; progress $baseprog $bases INSTCORE "Installing core packages" #5
+	p; progress $baseprog "$bases" INSTCORE "Installing core packages" #5
 	x_core_install perl-base
 
-	p; progress $baseprog $bases INSTCORE "Installing core packages" #6
+	p; progress $baseprog "$bases" INSTCORE "Installing core packages" #6
 	rm "$TARGET/usr/bin/awk"
 	x_core_install mawk
 
-	p; progress $baseprog $bases INSTCORE "Installing core packages" #7
+	p; progress $baseprog "$bases" INSTCORE "Installing core packages" #7
 	if doing_variant -; then
 		x_core_install debconf
 	fi
@@ -244,7 +248,7 @@ Status: install ok installed" >> "$TARGET/var/lib/dpkg/status"
 	smallyes '' |
 		(repeatn 5 in_target_failmsg UNPACK_REQ_FAIL_FIVE "Failure while unpacking required packages.  This will be attempted up to five times." "" \
 		dpkg --status-fd 8 --force-depends --unpack $(debfor $required) 8>&1 1>&7 || echo EXITCODE $?) |
-		dpkg_progress $baseprog $bases UNPACKREQ "Unpacking required packages" UNPACKING
+		dpkg_progress $baseprog "$bases" UNPACKREQ "Unpacking required packages" UNPACKING
 
 	info CONFREQ "Configuring required packages..."
 
@@ -281,7 +285,7 @@ echo \"Warning: Fake initctl called, doing nothing\"" > "$TARGET/sbin/initctl"
 	smallyes '' |
 		(in_target_failmsg CONF_REQ_FAIL "Failure while configuring required packages." "" \
 		dpkg --status-fd 8 --configure --pending --force-configure-any --force-depends 8>&1 1>&7 || echo EXITCODE $?) |
-		dpkg_progress $baseprog $bases CONFREQ "Configuring required packages" CONFIGURING
+		dpkg_progress $baseprog "$bases" CONFREQ "Configuring required packages" CONFIGURING
 
 	baseprog=0
 	bases="$(set -- $base; echo $#)"
@@ -306,14 +310,14 @@ echo \"Warning: Fake initctl called, doing nothing\"" > "$TARGET/sbin/initctl"
 		smallyes '' |
 			(repeatn 5 in_target_failmsg INST_BASE_FAIL_FIVE "Failure while installing base packages.  This will be re-attempted up to five times." "" \
 			dpkg --status-fd 8 --force-overwrite --force-confold --skip-same-version --unpack $(debfor $base) 8>&1 1>&7 || echo EXITCODE $?) |
-			dpkg_progress $baseprog $bases UNPACKBASE "Unpacking base system" UNPACKING
+			dpkg_progress $baseprog "$bases" UNPACKBASE "Unpacking base system" UNPACKING
 
 		info CONFBASE "Configuring the base system..."
 
 		smallyes '' |
 			(repeatn 5 in_target_failmsg CONF_BASE_FAIL_FIVE "Failure while configuring base packages.  This will be re-attempted up to five times." "" \
 			dpkg --status-fd 8 --force-confold --skip-same-version --configure -a 8>&1 1>&7 || echo EXITCODE $?) |
-			dpkg_progress $baseprog $bases CONFBASE "Configuring base system" CONFIGURING
+			dpkg_progress $baseprog "$bases" CONFBASE "Configuring base system" CONFIGURING
 	fi
 
 	if [ -x "$TARGET/sbin/initctl.REAL" ]; then
@@ -322,6 +326,6 @@ echo \"Warning: Fake initctl called, doing nothing\"" > "$TARGET/sbin/initctl"
 	mv "$TARGET/sbin/start-stop-daemon.REAL" "$TARGET/sbin/start-stop-daemon"
 	rm -f "$TARGET/usr/sbin/policy-rc.d"
 
-	progress $bases $bases CONFBASE "Configuring base system"
+	progress "$bases" "$bases" CONFBASE "Configuring base system"
 	info BASESUCCESS "Base system installed successfully."
 }

@@ -16,6 +16,10 @@ use Dpkg::Version;
 use IPC::Run qw(run);
 use Test::More;
 
+if (scalar @ARGV != 1) {
+    die "usage: $0 [minbase|-|buildd]"
+}
+my $variant = $ARGV[0];
 my $srcdir = getcwd;
 
 sub verbose_run {
@@ -333,9 +337,9 @@ my $distro_info = DebianDistroInfo->new;
 my $testing = $distro_info->testing;
 
 # Should specify multiple components for checking (see Bug#898738)
-if (!verbose_run(['debootstrap',
+if (!verbose_run([length($ENV{DEBOOTSTRAP_SCRIPT}) ? $ENV{DEBOOTSTRAP_SCRIPT} : 'debootstrap',
             '--include=debootstrap,debian-archive-keyring,gnupg,hello,systemd',
-            '--variant=minbase',
+            "--variant=$variant",
             '--components=main,contrib,non-free',
             $testing, 'chroot.d', $mirror], '>&2')) {
     BAIL_OUT("debootstrap failed: $?");
@@ -370,7 +374,7 @@ else {
             '--bind-ro=/usr/sbin/debootstrap',
             '--bind-ro=/usr/share/debootstrap',
             '--',
-            'debootstrap', '--include=hello', '--variant=minbase',
+            'debootstrap', '--include=hello', "--variant=$variant",
             $testing, '/mnt/from-nspawn.d', $mirror], '>&2')) {
         BAIL_OUT("debootstrap wrapped in systemd-nspawn failed: $?");
     }

@@ -1,3 +1,10 @@
+debootstrap (1.0.141deepin1) unstable; urgency=medium
+
+  * Add apricot, beige, eagle and snipe.
+  * Modify crimson
+
+ -- lhdjply <lhdjply@126.com>  Thu, 22 May 2025 11:52:52 +0800
+
 debootstrap (1.0.141) unstable; urgency=medium
 
   [ Jeremy Bícha ]

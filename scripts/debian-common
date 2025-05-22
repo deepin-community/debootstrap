@@ -1,3 +1,4 @@
+# shellcheck shell=sh
 if doing_variant fakechroot; then
 	test "$FAKECHROOT" = "true" || error 1 FAKECHROOTREQ "This variant requires fakechroot environment to be started"
 fi
@@ -10,9 +11,17 @@ case $ARCH in
 esac
 
 work_out_debs () {
-	if ! doing_variant buildd; then
-		required="$(get_debs Priority: required)"
-	fi
+	case "$CODENAME" in
+		etch*|lenny|squeeze|wheezy|jessie*|stretch|buster|bullseye|bookworm)
+			# always compute for bookworm and earlier
+			required="$(get_debs Priority: required)"
+			;;
+		*)
+			# only compute when variant is not buildd for trixie and later
+			if ! doing_variant buildd; then
+				required="$(get_debs Priority: required)"
+			fi
+	esac
 
 	if doing_variant - || doing_variant fakechroot; then
 		#required="$required $(get_debs Priority: important)"
@@ -23,7 +32,12 @@ work_out_debs () {
 		# do not install Priority:required for the buildd variant
 		# explicitly add mawk because we cannot resolve base-files's
 		# virtual pre-depends on awk
-		required="mawk $(get_debs Essential: yes)"
+		case "$CODENAME" in
+			etch*|lenny|squeeze|wheezy|jessie*|stretch|buster|bullseye|bookworm)
+				# only apply this for trixie and later
+				;;
+			*) required="mawk $(get_debs Essential: yes)";;
+		esac
 	elif doing_variant minbase; then
 		base="apt"
 	fi
@@ -47,27 +61,44 @@ work_out_debs () {
 		;;
 	esac
 
-	# On suites >= bookworm, either we set up a merged-/usr system
+	# On suites == bookworm, either we set up a merged-/usr system
 	# via merge_usr, or we deliberately avoid that migration by creating
 	# the flag file. This means there's no need for the live migration
 	# 'usrmerge' package and its extra dependencies:
 	# we can install the empty 'usr-is-merged' metapackage to indicate
 	# that the transition has been done.
+	# On suites > bookworm there are no longer usr-is-merged or usrmerge
+	# packages, so ensure the dependency is pruned if present.
 	case "$CODENAME" in
 		etch*|lenny|squeeze|wheezy|jessie*|stretch|buster|bullseye)
 			;;
-		*)
+		bookworm)
 			required="$required usr-is-merged"
 			EXCLUDE_DEPENDENCY="$EXCLUDE_DEPENDENCY usrmerge"
+			;;
+		*)
+			EXCLUDE_DEPENDENCY="$EXCLUDE_DEPENDENCY usrmerge"
+			;;
+	esac
+
+	case $ARCH in
+		hurd-*)
+			# cron-daemon-common depends on systemd-opensysusers
+			# that opensysusers Provides, but debootstrap won't
+			# see that
+			case \ $(echo $base)\  in
+				*" cron "*)
+					required="$required opensysusers"
+					;;
+			esac
 			;;
 	esac
 }
 
 first_stage_install () {
 	case "$CODENAME" in
-		# "merged-usr" blacklist for past releases
+		# tar -k blacklist for past releases
 		etch*|lenny|squeeze|wheezy|jessie*)
-			[ -z "$MERGED_USR" ] && MERGED_USR="no"
 			;;
 		*)
 			# see https://bugs.debian.org/838388
@@ -75,9 +106,15 @@ first_stage_install () {
 			;;
 	esac
 
-	if [ "$CODENAME" = "stretch" ] && [ -z "$MERGED_USR" ]; then
-		MERGED_USR="no"
-	fi
+	case "$CODENAME" in
+		# "merged-usr" blacklist for past releases
+		etch*|lenny|squeeze|wheezy|jessie*|stretch)
+			[ -z "$MERGED_USR" ] && MERGED_USR="no"
+		;;
+		buster|bullseye|bookworm)
+			[ -z "$MERGED_USR" ] && doing_variant buildd && MERGED_USR="no"
+		;;
+	esac
 
 	extract $required
 	merge_usr

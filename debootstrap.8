@@ -102,12 +102,20 @@ and use
 .IR KEYRING
 to check signatures of retrieved Release files.
 .IP
+.IP "\fB\-\-no-check-sig\fP"
+Disables checking OpenPGP signatures of retrieved Release files.
+Supported since 1.0.139.
+.IP
 .IP "\fB\-\-no-check-gpg\fP"
-Disables checking gpg signatures of retrieved Release files.
+Deprecated alias for "\fB\-\-no-check-sig\fP".
+.IP
+.IP "\fB\-\-force-check-sig\fP"
+Forces checking OpenPGP Release file signatures, disabling automatic fallback to
+HTTPS in case of a missing keyring. Incompatible with the previous option.
+Supported since 1.0.139.
 .IP
 .IP "\fB\-\-force-check-gpg\fP"
-Forces checking Release file signatures, disabling automatic fallback to
-HTTPS in case of a missing keyring. Incompatible with the previous option.
+Deprecated alias for "\fB\-\-force-check-sig\fP".
 .IP
 .IP "\fB\-\-verbose\fP"
 Produce more info about downloading.

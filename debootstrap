@@ -10,7 +10,7 @@ export PATH
 
 ###########################################################################
 
-if [ -z "$DEBOOTSTRAP_DIR" ]; then
+if [ -z "${DEBOOTSTRAP_DIR-}" ]; then
 	if [ -x /debootstrap/debootstrap ]; then
 		DEBOOTSTRAP_DIR=/debootstrap
 	else
@@ -50,7 +50,6 @@ CACHE_DIR=""
 INRELEASE_PATH=""
 
 DEF_MIRROR="http://deb.debian.org/debian"
-DEF_HTTPS_MIRROR="https://deb.debian.org/debian"
 
 # set $CONTAINER
 detect_container
@@ -114,10 +113,12 @@ usage()
       --no-merged-usr        do not make /{bin,sbin,lib}/ symlinks to /usr/
                              (default for older Debian suites)
       --keyring=K            check Release files against keyring K
-      --no-check-gpg         avoid checking Release file signatures
-      --force-check-gpg      force checking Release file signatures
+      --no-check-sig         avoid checking Release file signatures
+      --no-check-gpg         deprecated alias for --no-check-sig
+      --force-check-sig      force checking Release file signatures
                              (also disables automatic fallback to HTTPS in case
                              of a missing keyring), aborting otherwise
+      --force-check-gpg      deprecated alias for --force-check-sig
       --no-resolve-deps      don't try to resolve dependencies automatically
       --log-extra-deps       record extra dependency info in debootstrap.log
       --cache-dir=DIR        Use specified directory as package cache directory
@@ -161,7 +162,7 @@ if [ $# != 0 ] ; then
 		exit 0
 		;;
 	    --debian-installer)
-		if ! (echo -n "" >&3) 2>/dev/null; then
+		if ! (printf "" >&3) 2>/dev/null; then
 			error 1 ARG_DIBYHAND "If running debootstrap by hand, don't use --debian-installer"
 		fi
 		USE_DEBIANINSTALLER_INTERACTION=yes
@@ -357,7 +358,7 @@ if [ $# != 0 ] ; then
 		;;
 	    --cache-dir|--cache-dir=?*)
 		# Okay, let's check user's option
-		if [ "$1" = "--cache-dir" ] && [ -n "$2" ] ; then
+		if [ "$1" = "--cache-dir" ] && [ -n "${2-}" ] ; then
 			CACHE_DIR="$2"
 			shift 2
 		elif [ "$1" != "${1#--cache-dir=}" ]; then
@@ -366,7 +367,7 @@ if [ $# != 0 ] ; then
 		else
 			error 1 NEEDARG "option requires an argument %s" "$1"
 		fi
-		if [ ! -z "${CACHE_DIR##/*}" ]; then
+		if [ -n "${CACHE_DIR##/*}" ]; then
 			error 1 NOTABSOLUTEPATH "cache directory should be specified with an absolute path"
 		fi
 		if [ ! -d "$CACHE_DIR" ] ; then
@@ -382,8 +383,8 @@ if [ $# != 0 ] ; then
 		shift
 		;;
 	    --keyring|--keyring=?*)
-		if ! gpgv --version >/dev/null 2>&1; then
-			error 1 NEEDGPGV "gpgv not installed, but required for Release verification"
+		if ! in_path sopv && ! in_path sqv && ! in_path gpgv; then
+			error 1 NEEDPGPV "none of sopv, sqv or gpgv are installed, but required for Release verification"
 		fi
 		if [ "$1" = "--keyring" ] && [ -n "$2" ]; then
 			KEYRING="$2"
@@ -398,11 +399,11 @@ if [ $# != 0 ] ; then
 			error 1 KEYRING "specified keyring file ($KEYRING) not found"
 		fi
 		;;
-	    --no-check-gpg)
+	    --no-check-sig|--no-check-gpg)
 			shift 1
 			DISABLE_KEYRING=1
 		;;
-	    --force-check-gpg)
+	    --force-check-sig|--force-check-gpg)
 			shift 1
 			FORCE_KEYRING=1
 		;;
@@ -411,10 +412,10 @@ if [ $# != 0 ] ; then
 			CERTIFICATE="--certificate=$2"
 			shift 2
 		elif [ "$1" != "${1#--certificate=}" ]; then
-			CERTIFICATE="--certificate=${1#--certificate=}" 
+			CERTIFICATE="--certificate=${1#--certificate=}"
 			shift 1
 		else
-		       error 1 NEEDARG "option requires an argument %s" "$1" 
+		       error 1 NEEDARG "option requires an argument %s" "$1"
 		fi
 		;;
 	    --private-key|--private-key=?*)
@@ -422,10 +423,10 @@ if [ $# != 0 ] ; then
 			PRIVATEKEY="--private-key=$2"
 			shift 2
 		elif [ "$1" != "${1#--private-key=}" ]; then
-			PRIVATEKEY="--private-key=${1#--private-key=}" 
+			PRIVATEKEY="--private-key=${1#--private-key=}"
 			shift 1
 		else
-		       error 1 NEEDARG "option requires an argument %s" "$1" 
+		       error 1 NEEDARG "option requires an argument %s" "$1"
 		fi
 		;;
 	    --no-check-certificate)
@@ -463,7 +464,7 @@ if ! doing_variant fakechroot && command -v apt-config >/dev/null; then
     fi
     if [ -z "${http_proxy+x}" ] && [ -x "$AUTOPROXY" ]; then
         http_proxy="$($AUTOPROXY)"
-        if [ -n "$http_proxy" ]; then
+        if [ -n "$http_proxy" ] && [ "$http_proxy" != "DIRECT" ]; then
             info AUTOPROXY "Using auto-detected proxy: $http_proxy"
             export http_proxy
         fi
@@ -472,7 +473,7 @@ fi
 
 ###########################################################################
 if [ -n "$DISABLE_KEYRING" ] && [ -n "$FORCE_KEYRING" ]; then
-	error 1 BADARG "Both --no-check-gpg and --force-check-gpg specified, please pick one (at most)"
+	error 1 BADARG "Both --no-check-sig (or --no-check-gpg) and --force-check-sig (or --force-check-gpg) specified, please pick one (at most)"
 fi
 
 ###########################################################################
@@ -498,12 +499,12 @@ else
 	if ! in_path wget; then
 		error 1 NEEDWGET "You must install wget to download packages."
 	fi
-	if [ -z "$1" ] || [ -z "$2" ]; then
+	if [ -z "${1-}" ] || [ -z "${2-}" ]; then
 		usage_err 1 NEEDSUITETARGET "You must specify a suite and a target."
 	fi
 	SUITE="$1"
 	TARGET="$2"
-	USER_MIRROR="$3"
+	USER_MIRROR="${3-}"
 	TARGET="${TARGET%/}"
 	if [ "${TARGET#/}" = "${TARGET}" ]; then
 		if [ "${TARGET%/*}" = "$TARGET" ] ; then
@@ -514,11 +515,18 @@ else
 	fi
 
 	SCRIPT="$DEBOOTSTRAP_DIR/scripts/$1"
+	if ! [ -e "$SCRIPT" ] && [ $(which distro-info 2>/dev/null) ]; then
+		if debian-distro-info --series "$1" >/dev/null 2>&1; then
+			SCRIPT="$DEBOOTSTRAP_DIR/scripts/sid"
+		elif ubuntu-distro-info --series "$1" >/dev/null 2>&1; then
+			SCRIPT="$DEBOOTSTRAP_DIR/scripts/gutsy"
+		fi
+	fi
 	if [ -n "$VARIANT" ] && [ -e "${SCRIPT}.${VARIANT}" ]; then
 		SCRIPT="${SCRIPT}.${VARIANT}"
 		SUPPORTED_VARIANTS="$VARIANT"
 	fi
-	if [ "$4" != "" ]; then
+	if [ -n "${4-}" ]; then
 		if [ -e "$DEBOOTSTRAP_DIR/scripts/$4" ]; then
 			SCRIPT="$DEBOOTSTRAP_DIR/scripts/$4"
 		else
@@ -564,6 +572,9 @@ if [ -z "$HOST_OS" ]; then
 		FreeBSD*)
 			HOST_OS=freebsd
 		;;
+		Darwin)
+			HOST_OS=darwin
+		;;
 	esac
 fi
 
@@ -593,7 +604,7 @@ if [ "$HOST_OS" = Linux ] && ! doing_variant fakechroot && [ "$CONTAINER" = "lxc
        CHROOT_CMD="unshare --net $CHROOT_CMD"
 fi
 
-if [ -z "$SHA_SIZE" ]; then
+if [ -z "${SHA_SIZE-}" ]; then
 	SHA_SIZE=256
 fi
 if ! in_path "sha${SHA_SIZE}sum" && ! in_path "sha${SHA_SIZE}"; then
@@ -608,9 +619,12 @@ if am_doing_phase first_stage second_stage; then
 	if in_path id && [ "$(id -u)" -ne 0 ]; then
 		error 1 NEEDROOT "debootstrap can only run as root"
 	fi
+	if ! in_path chroot; then
+		error 1 NEEDCHROOT "Cannot find chroot executable in \$PATH"
+	fi
 	# Ensure that we can create working devices and executables on the target.
 	if ! check_sane_mount "$TARGET"; then
-		error 1 NOEXEC "Cannot install into target '$TARGET' mounted with noexec or nodev"
+		error 1 NOEXEC "Cannot install into target '$TARGET' mounted with noexec"
 	fi
 fi
 
@@ -731,7 +745,7 @@ if am_doing_phase finddebs; then
 		base=$(resolve_deps "$baseX")
 		base=$(without "$base" "$required")
 
-		if [ "$LOG_EXTRA_DEPS" = true ]; then
+		if [ "${LOG_EXTRA_DEPS-}" = true ]; then
 			baseN=$(without "$baseX" "$requiredX")
 			baseU=$(without "$baseX" "$baseN")
 
@@ -866,6 +880,13 @@ fi
 if am_doing_phase kill_target; then
 	if [ "$KEEP_DEBOOTSTRAP_DIR" != true ]; then
                 info KILLTARGET "Deleting target directory"
-		rm -rf --one-file-system "$TARGET"
+		case "$HOST_OS" in
+			freebsd|darwin)
+				rm -rfx "$TARGET"
+				;;
+			*)
+				rm -rf --one-file-system "$TARGET"
+				;;
+		esac
 	fi
 fi

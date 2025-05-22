@@ -1,16 +1,148 @@
-debootstrap (1.0.133deepin2) unstable; urgency=medium
+debootstrap (1.0.141) unstable; urgency=medium
 
-  * Add apricot, eagle and snipe.
-  * apricot and eagle is not usr-merged.
-  * Add support for variant=buildd.
+  [ Jeremy Bícha ]
+  * Ubuntu: add symlink for questing
 
- -- Tianyu Chen <sweetyfish@deepin.org>  Fri, 21 Feb 2025 16:12:37 +0800
+ -- Luca Boccassi <bluca@debian.org>  Thu, 24 Apr 2025 18:07:42 +0100
 
-debootstrap (1.0.133deepin1) unstable; urgency=medium
+debootstrap (1.0.140) unstable; urgency=medium
 
-  * Add support for deepin beige.
+  [ Dominique Martinet ]
+  * ubuntu: fix scripts/gutsy syntax error
 
- -- Tianyu Chen <sweetyfish@deepin.org>  Wed, 29 Nov 2023 11:53:23 +0800
+  [ Helmut Grohne ]
+  * move Debian-specific /usr-merge checks from functions to
+    scripts/debian-common
+  * scripts/debian-common: fold multiple paths setting MERGED_USR
+
+  [ Luca Boccassi ]
+  * Bump Standards-Version to 4.7.0, no changes
+
+ -- Luca Boccassi <bluca@debian.org>  Wed, 01 Jan 2025 17:57:08 +0000
+
+debootstrap (1.0.139) unstable; urgency=high
+
+  [ Dan Bungert ]
+  * Ubuntu: fix intended reference to SUITE
+
+  [ Kasper Kantz ]
+  * Make distro-info script portable
+
+  [ keve-guest ]
+  * Add support for running on MacOS
+
+  [ Guillem Jover ]
+  * Add debian/debhelper-build-stamp to debian/.gitignore
+  * Add new --no-check-sig and --force-check-sig
+  * Recommend gpgv instead of gnupg
+  * Use «in_path» instead of executing «gpgv --version»
+  * Add sopv support
+  * Add sqv support (Closes: #1091588)
+
+  [ Luca Boccassi ]
+  * Prefer gpgv if all signature verification tools are installed
+  * Do not pull in usr-is-merged in trixie/sid (Closes: #1091649)
+
+ -- Luca Boccassi <bluca@debian.org>  Sun, 29 Dec 2024 12:24:52 +0000
+
+debootstrap (1.0.138) unstable; urgency=medium
+
+  [ Benjamin Drung ]
+  * Fix EXTRACTOR_OVERRIDE: parameter not set (LP: #1971951)
+  * Fix several shellcheck complaints
+
+  [ Samuel Thibault ]
+  * work_out_debs: On hurd-any, when cron gets installed, add opensysusers to
+    fulfill's cron-daemon-common dependency on systemd-opensysusers
+    (Closes: Bug#1079374)
+
+  [ Miao Wang ]
+  * Self-identify the name and the version in the User-Agent header sent out
+    by wget.
+
+  [ Charles Short ]
+  * Add support for eLxr.
+
+  [ Denis 'GNUtoo' Carikli ]
+  * scripts/amber: fix fakechroot.
+  * scripts/robur: fix fakechroot.
+
+  [ Johannes Schauer Marin Rodrigues ]
+  * create /dev/fd symlink with --no-target-directory
+
+  [ Luca Boccassi ]
+  * Ubuntu: add symlink for plucky
+
+ -- Luca Boccassi <bluca@debian.org>  Wed, 27 Nov 2024 22:08:03 +0000
+
+debootstrap (1.0.137) unstable; urgency=medium
+
+  [ kasperk81 ]
+  * reinstate Ubuntu codename symlinks
+
+  [ Luca Boccassi ]
+  * Ubuntu: add symlink for oracular
+
+ -- Luca Boccassi <bluca@debian.org>  Thu, 25 Jul 2024 23:15:47 +0100
+
+debootstrap (1.0.136) unstable; urgency=medium
+
+  [ Philip Hands ]
+  * reinstate Debian codename symlinks (closes: #1073785)
+  * drop unneeded addition of "test extras"
+  * switch to using branch2repo for salsa-ci
+  * avoid setting DEF_MIRROR to https://https://...
+
+ -- Luca Boccassi <bluca@debian.org>  Tue, 18 Jun 2024 21:36:25 +0100
+
+debootstrap (1.0.135) unstable; urgency=medium
+
+  [ Ken Sharp ]
+  * fix quoting to allow spaces in target directory (Closes: #1061820)
+  * Use distro-info where possible
+  * Remove superfluous symlinks
+  * Use correct keyring and mirror for Ubuntu
+  * Ubuntu: test for dpkg zstd support for Hirsute+
+  * Update dependencies
+  * Remove hardcoded HTTPS mirror and use inline substitution
+
+  [ Adrien Robert ]
+  * fix: handling of DIRECT returned by Acquire::http:Proxy-Auto-Detect
+
+  [ Johannes Schauer Marin Rodrigues ]
+  * debian/tests/debian-testing: test minbase, default and buildd variants
+
+  [ Helmut Grohne ]
+  * make debootstrap work on filesystems mounted nodev (Closes: #1073169)
+
+ -- Luca Boccassi <bluca@debian.org>  Sat, 15 Jun 2024 11:13:44 +0100
+
+debootstrap (1.0.134) unstable; urgency=medium
+
+  [ Johannes Schauer Marin Rodrigues ]
+  * scripts/debian-common: install Priority:required with buildd variant
+    for bookworm and earlier
+  * scripts/debian-common: fixup for last commit
+  * error out if chroot cannot be found in $PATH
+  * check_sane_mount: if mknod does not work, test if bind-mounting
+    /dev/null works
+  * setup_devices: fall back to setup_devices_bind if setup_devices_simple
+    failed irrespective of the container
+  * debian/tests/debian-testing: support for DEBOOTSTRAP_SCRIPT
+    environment variable
+  * Move "unshared" test from autopkgtest to salsaci pipeline
+  * debian/salsa-ci.yml: add checks for the buildd variant
+
+  [ Matthias Klumpp ]
+  * Implement support for repos with modern-style arch:all support
+  * Add test for split-arch:all support
+
+  [ Luca Boccassi ]
+  * Add Ubuntu scripts/ symlinks for Lunar, Mantic and Noble
+  * Add Debian scripts/ symlink for Forky
+  * Bump copyright year ranges in d/copyright
+
+ -- Luca Boccassi <bluca@debian.org>  Fri, 05 Jan 2024 10:17:39 +0100
 
 debootstrap (1.0.133) unstable; urgency=medium
 

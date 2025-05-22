@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2023 Debian Install System Team <debian-boot@lists.debian.org>
+#
+# SPDX-License-Identifier: MIT
+
 """Flask app which MITM's an archive to generate out-of-order apt lists.
 
 Specifically, it prepends an additional Packages file stanza for a non-existent
@@ -17,12 +23,12 @@ from flask import Flask, redirect
 app = Flask(__name__)
 
 ARCH = os.environ.get("FLASK_ARCH", "amd64")
-DIST = os.environ.get("FLASK_DIST", "bookworm")
+DIST = os.environ.get("FLASK_DIST", "trixie")
 DISTRO = os.environ.get("FLASK_DISTRO", "debian")
 MIRROR = os.environ.get("FLASK_MIRROR", "http://deb.debian.org")
 
 
-if DISTRO == "debian":
+if DISTRO in ("debian", "pureos"):
     hash_funcs = [hashlib.md5, hashlib.sha256]
 else:
     # Ubuntu includes SHA1 still

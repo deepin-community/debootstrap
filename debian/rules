@@ -12,6 +12,9 @@ else ifeq (0,$(shell dpkg-vendor --derives-from Kali; echo $$?))
 else ifeq (0,$(shell dpkg-vendor --derives-from Pardus; echo $$?))
   RECOMMENDS := pardus-archive-keyring, arch-test (>= 0.11~),
   SUGGESTS   := debian-archive-keyring, ubuntu-archive-keyring, binutils, xz-utils, zstd
+else ifeq (0,$(shell dpkg-vendor --derives-from eLxr; echo $$?))
+  RECOMMENDS := elxr-archive-keyring, arch-test (>= 0.11~),
+  SUGGESTS   := debian-archive-keyring, ubuntu-archive-keyring, binutils, xz-utils, zstd
 else
   RECOMMENDS := debian-archive-keyring, arch-test (>= 0.11~),
   SUGGESTS   := ubuntu-archive-keyring, binutils, xz-utils, zstd
